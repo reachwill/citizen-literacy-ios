@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+    #bar{
+        transition: width .25s;
+    }
+    </style>
+</head>
+<body>
+    
+
+
+
+
+<div>Teachable Machine Audio Model</div>
+<button type="button" onclick="init()">Start</button>
+<div id="bar-container" style="position: relative; width:800px; height:80px; border: 1px solid black;">
+    <div id="satWill" style="height: 20px; position: absolute; left:0; top:0; ">Sat</div>
+    <div id="pinWill" style="height: 20px; position: absolute; left:0; top:20px; ">Pin</div>
+    <div id="nipWill" style="height: 20px; position: absolute; left:0; top:40px; ">Nip</div>
+    <div id="spinWill" style="height: 20px; position: absolute; left:0; top:60px; ">Spin</div>
+    
+</div>
+<div id="label-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands@0.4.0/dist/speech-commands.min.js"></script>
+
+<script type="text/javascript">
+    // more documentation available at
+    // https://github.com/tensorflow/tfjs-models/tree/master/speech-commands
+
+    // the link to your model provided by Teachable Machine export panel
+    //const URL = "https://teachablemachine.withgoogle.com/models/dm73kVns/";
+    //const URL = "https://teachablemachine.withgoogle.com/models/P65rU-tS/";
+    //const URL = "https://teachablemachine.withgoogle.com/models/f3b_BF4A/";
+    const URL = "https://teachablemachine.withgoogle.com/models/9WzOFJhQ/";//Sheila
+    // const URL = "http://127.0.0.1:5500/my_model/";
+    
+
+    async function createModel() {
+        const checkpointURL = URL + "model.json"; // model topology
+        const metadataURL = URL + "metadata.json"; // model metadata
+
+        const recognizer = speechCommands.create(
+            "BROWSER_FFT", // fourier transform type, not useful to change
+            undefined, // speech commands vocabulary feature, not useful for your models
+            checkpointURL,
+            metadataURL);
+
+        // check that model and metadata are loaded via HTTPS requests.
+        await recognizer.ensureModelLoaded();
+
+        return recognizer;
+    }
+
+    async function init() {
+        const recognizer = await createModel();
+        const classLabels = recognizer.wordLabels(); // get class labels
+        const labelContainer = document.getElementById("label-container");
+        for (let i = 0; i < classLabels.length; i++) {
+            labelContainer.appendChild(document.createElement("div"));
+        }
+
+        // listen() takes two arguments:
+        // 1. A callback function that is invoked anytime a word is recognized.
+        // 2. A configuration object with adjustable fields
+        recognizer.listen(result => {
+            const scores = result.scores; // probability of prediction for each class
+            // render the probability scores per class
+            
+            
+            for (let i = 0; i < classLabels.length; i++) {
+                const classPrediction = classLabels[i] + ": " + result.scores[i].toFixed(2);
+                labelContainer.childNodes[i].innerHTML = classPrediction;
+                console.log(classPrediction);
+                
+                let predictionValue = classPrediction.split(':')[1].trim();
+                let predictionLabel = classPrediction.split(':')[0].trim();
+                if(predictionLabel=='Sat'){
+                    if(predictionValue > 0){
+                        console.log('rgba('+Math.round(255*predictionValue)+',0,0,1)');
+                        document.getElementById('satWill').style.width=predictionValue*100+'%';
+                        document.getElementById('satWill').style.backgroundColor='rgba(20,'+Math.round((255*predictionValue))+',0,1)';
+                    }else{
+                        document.getElementById('satWill').style.width='0';
+                    }
+                }
+                if(predictionLabel=='Pin'){
+                    if(predictionValue > 0){
+                        console.log('rgba('+Math.round(255*predictionValue)+',0,0,1)');
+                        document.getElementById('pinWill').style.width=predictionValue*100+'%';
+                        document.getElementById('pinWill').style.backgroundColor='rgba(20,'+Math.round((255*predictionValue))+',0,1)';
+                    }else{
+                        document.getElementById('pinWill').style.width='0';
+                    }
+                }
+                if(predictionLabel=='Nip'){
+                    if(predictionValue > 0){
+                        console.log('rgba('+Math.round(255*predictionValue)+',0,0,1)');
+                        document.getElementById('nipWill').style.width=predictionValue*100+'%';
+                        document.getElementById('nipWill').style.backgroundColor='rgba(20,'+Math.round((255*predictionValue))+',0,1)';
+                    }else{
+                        document.getElementById('nipWill').style.width='0';
+                    }
+                }
+                if(predictionLabel=='Spin'){
+                    if(predictionValue > 0){
+                        console.log('rgba('+Math.round(255*predictionValue)+',0,0,1)');
+                        document.getElementById('spinWill').style.width=predictionValue*100+'%';
+                        document.getElementById('spinpWill').style.backgroundColor='rgba(20,'+Math.round((255*predictionValue))+',0,1)';
+                    }else{
+                        document.getElementById('spinWill').style.width='0';
+                    }
+                }
+                
+            }
+        }, {
+            includeSpectrogram: true, // in case listen should return result.spectrogram
+            probabilityThreshold: 0.75,
+            invokeCallbackOnNoiseAndUnknown: true,//initially set to true but I think better false
+            overlapFactor: 0.6 // probably want between 0.5 and 0.75. More info in README
+        });
+
+        // Stop the recognition in 5 seconds.
+        // setTimeout(() => recognizer.stopListening(), 5000);
+    }
+</script>
+
+</body>
+</html>
